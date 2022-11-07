@@ -4,6 +4,7 @@ import requests
 import csv
 import random
 
+
 class Player:
     def __init__(self, id, name, position, club):
         self.name = name
@@ -16,6 +17,7 @@ class Player:
 
     def print_info(self):
         return self.name + " " + self.position
+
 
 try:
     source = requests.get('https://www.ultimatealeague.com/players/')
