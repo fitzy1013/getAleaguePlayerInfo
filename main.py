@@ -103,7 +103,7 @@ def getRandomXI():
     return squad_string
 
 
-TOKEN = "MTAzODA0NTM1NTY2Njg1Mzk1OA.GM07Jc.byzg-FfooaweiDJ_81ppz_QIto8cqybm006NpQ"
+TOKEN = ""
 
 intents = discord.Intents.default()
 intents.message_content = True
