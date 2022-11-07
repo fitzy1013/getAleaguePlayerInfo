@@ -22,34 +22,44 @@ class Player:
 
 try:
     source = requests.get('https://www.ultimatealeague.com/players/')
-    source2 = requests.get('https://fbref.com/en/comps/65/A-League-Men-Stats')
     source.raise_for_status()
-    source2.raise_for_status()
 except Exception as e:
     print(e)
 
 
 def league_table_to_csv():
-    soup = BeautifulSoup(source2.text, 'html.parser')
-    table = soup.find('table', {'id': 'results2022-2023651_overall'}).find('tbody').find_all('tr')
+    with open('fbreference.csv') as csv_file:
+        csv_reader = csv.reader(csv_file, delimiter=',')
+        line_count = 0
+        for row in csv_reader:
+            if line_count > 0:
+                try:
+                    source2 = requests.get(row[1])
+                    source2.raise_for_status()
+                    id = row[2]
+                except Exception as e:
+                    print(e)
+                soup = BeautifulSoup(source2.text, 'html.parser')
+                table = soup.find('table', {'id': row[2]}).find('tbody').find_all('tr')
 
-    table_list = []
-    index = 1
+                table_list = []
+                index = 1
 
-    for team in table:
-        team_name = team.find('td', {'data-stat': 'team'}).a.text
-        gp = team.find('td', {'data-stat': 'games'}).text
-        gd = team.find('td', {'data-stat': 'goal_diff'}).text
-        pts = team.find('td', {'data-stat': 'points'}).text
-        table_entry = [index, team_name, gp, gd, pts]
-        table_list.append(table_entry)
-        index += 1
+                for team in table:
+                    team_name = team.find('td', {'data-stat': 'team'}).a.text
+                    gp = team.find('td', {'data-stat': 'games'}).text
+                    gd = team.find('td', {'data-stat': 'goal_diff'}).text
+                    pts = team.find('td', {'data-stat': 'points'}).text
+                    table_entry = [index, team_name, gp, gd, pts]
+                    table_list.append(table_entry)
+                    index += 1
 
-    header = ['pos', 'team', 'gp', 'gd', 'pts']
-    with open('a-league_table.csv', 'w', encoding='UTF8', newline='') as f:
-        writer = csv.writer(f)
-        writer.writerow(header)
-        writer.writerows(table_list)
+                header = ['pos', 'team', 'gp', 'gd', 'pts']
+                with open('{}_table.csv'.format(row[0]), 'w', encoding='UTF8', newline='') as f:
+                    writer = csv.writer(f)
+                    writer.writerow(header)
+                    writer.writerows(table_list)
+            line_count += 1
 
 
 def playerInfoToCSV():
@@ -152,6 +162,16 @@ intents.message_content = True
 client = discord.Client(intents=discord.Intents.all())
 
 
+def print_table(league):
+    team_list = getTable(league)
+    output = t2a(
+        header=["Pos", "Team", "GP", "GD", "Pts"],
+        body=team_list,
+        style=PresetStyle.thin_compact
+    )
+    return output
+
+
 @client.event
 async def on_ready():
     print(f'We have logged in as {client.user}')
@@ -164,13 +184,28 @@ async def on_message(message):
     if message.author == client.user:
         return
 
+    if message_low == '!ligue1-table':
+        output = print_table("ligue1")
+        await message.channel.send(f"```\n{output}\n```")
+
+    if message_low == '!bundesliga-table':
+        output = print_table("bundesliga")
+        await message.channel.send(f"```\n{output}\n```")
+
+    if message_low == '!la-liga-table':
+        output = print_table("la-liga")
+        await message.channel.send(f"```\n{output}\n```")
+
+    if message_low == '!serie-a-table':
+        output = print_table("serie-a")
+        await message.channel.send(f"```\n{output}\n```")
+
+    if message_low == '!epl-table':
+        output = print_table("epl")
+        await message.channel.send(f"```\n{output}\n```")
+
     if message_low == '!a-league-table':
-        team_list = getTable("a-league")
-        output = t2a(
-            header=["Pos", "Team", "GP", "GD", "Pts"],
-            body=team_list,
-            style=PresetStyle.thin_compact
-        )
+        output = print_table("a-league")
         await message.channel.send(f"```\n{output}\n```")
 
     if message_low == '!randomxi':
