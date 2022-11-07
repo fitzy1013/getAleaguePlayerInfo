@@ -216,6 +216,4 @@ async def on_message(message):
     if message_low == '!hello':
         await message.channel.send("Hello, {}!".format(message.author))
 
-playerInfoToCSV()
-league_table_to_csv()
 client.run(TOKEN)
