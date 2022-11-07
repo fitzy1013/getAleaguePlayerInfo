@@ -3,6 +3,7 @@ from bs4 import BeautifulSoup
 import requests
 import csv
 import random
+from table2ascii import table2ascii as t2a, PresetStyle
 
 
 class Player:
@@ -21,40 +22,76 @@ class Player:
 
 try:
     source = requests.get('https://www.ultimatealeague.com/players/')
+    source2 = requests.get('https://fbref.com/en/comps/65/A-League-Men-Stats')
     source.raise_for_status()
-
-    playerList = []
-
-    soup = BeautifulSoup(source.text, 'html.parser')
-
-
+    source2.raise_for_status()
 except Exception as e:
     print(e)
 
 
+def league_table_to_csv():
+    soup = BeautifulSoup(source2.text, 'html.parser')
+    table = soup.find('table', {'id': 'results2022-2023651_overall'}).find('tbody').find_all('tr')
+
+    table_list = []
+    index = 1
+
+    for team in table:
+        team_name = team.find('td', {'data-stat': 'team'}).a.text
+        gp = team.find('td', {'data-stat': 'games'}).text
+        gd = team.find('td', {'data-stat': 'goal_diff'}).text
+        pts = team.find('td', {'data-stat': 'points'}).text
+        table_entry = [index, team_name, gp, gd, pts]
+        table_list.append(table_entry)
+        index += 1
+
+    header = ['pos', 'team', 'gp', 'gd', 'pts']
+    with open('a-league_table.csv', 'w', encoding='UTF8', newline='') as f:
+        writer = csv.writer(f)
+        writer.writerow(header)
+        writer.writerows(table_list)
+
+
 def playerInfoToCSV():
-    players = soup.find('table', { 'id' : 'players-data-table' }).find('tbody').find_all('tr')
+    playerList = []
+    soup = BeautifulSoup(source.text, 'html.parser')
+    players = soup.find('table', {'id': 'players-data-table'}).find('tbody').find_all('tr')
 
     for player in players:
-        name = player.find('div', {'class' : 'player-link'}).a.text
-        pos = player.find('td', {'class' : 'data-table-desktop-hide data-table-cell'}).text
-        club = player.find('div', {'class' : 'club-link club-link-left'}).a.text
-        playerEntry = {'name': name, 'pos': pos, 'club': club}
+        name = player.find('div', {'class': 'player-link'}).a.text
+        pos = player.find('td', {'class': 'data-table-desktop-hide data-table-cell'}).text
+        club = player.find('div', {'class': 'club-link club-link-left'}).a.text
+        playerEntry = [name, pos, club]
         playerList.append(playerEntry)
 
-    header = {'name', 'pos', 'club'}
+    header = ['name', 'pos', 'club']
     with open('a-league_players.csv', 'w', encoding='UTF8', newline='') as f:
-        writer = csv.DictWriter(f, fieldnames=header)
-        writer.writeheader()
+        writer = csv.writer(f)
+        writer.writerow(header)
         writer.writerows(playerList)
 
 
-def checkIfPlayerInSquad(squad: [Player], playerID) :
+def checkIfPlayerInSquad(squad: [Player], playerID):
     for i in squad:
         if i.get_playerID() == playerID:
             return True
 
     return False
+
+
+def getTable():
+    team_list = []
+    team = []
+    with open('a-league_table.csv') as csv_file:
+        csv_reader = csv.reader(csv_file, delimiter=',')
+        line_count = 0
+        for row in csv_reader:
+            if line_count > 0:
+                team = [row[0], row[1], row[2], row[3], row[4]]
+                team_list.append(team)
+            line_count += 1
+
+    return team_list
 
 
 def getRandomXI():
@@ -68,19 +105,19 @@ def getRandomXI():
         line_count = 0
         for row in csv_reader:
             if line_count > 0:
-                p = Player(line_count, row[0], row[2], row[1])
-                if row[2] == "GK":
+                p = Player(line_count, row[0], row[1], row[2])
+                if row[1] == "GK":
                     gk_list.append(p)
-                elif row[2] == "DEF":
+                elif row[1] == "DEF":
                     def_list.append(p)
-                elif row[2] == "MID":
+                elif row[1] == "MID":
                     mid_list.append(p)
-                elif row[2] == "FWD":
+                elif row[1] == "FWD":
                     fwd_list.append(p)
             line_count += 1
 
     squad = []
-    index = random.randint(0,len(gk_list)-1)
+    index = random.randint(0, len(gk_list) - 1)
     squad.append(gk_list[index])
     squad_string = squad_string + gk_list[index].print_info() + "\n"
     for i in range(0, 4):
@@ -101,8 +138,8 @@ def getRandomXI():
             squad.append(fwd_list[index])
             squad_string = squad_string + fwd_list[index].print_info() + "\n"
 
-    print(squad_string)
     return squad_string
+
 
 TOKEN = ""
 
@@ -114,17 +151,27 @@ intents.message_content = True
 
 client = discord.Client(intents=discord.Intents.all())
 
+
 @client.event
 async def on_ready():
     print(f'We have logged in as {client.user}')
 
+
 @client.event
 async def on_message(message):
-
     message_low = message.content.lower()
 
     if message.author == client.user:
         return
+
+    if message_low == '!table':
+        team_list = getTable()
+        output = t2a(
+            header=["Pos", "Team", "GP", "GD", "Pts"],
+            body=team_list,
+            style=PresetStyle.thin_compact
+        )
+        await message.channel.send(f"```\n{output}\n```")
 
     if message_low == '!randomxi':
         squad = getRandomXI()
@@ -134,4 +181,6 @@ async def on_message(message):
     if message_low == '!hello':
         await message.channel.send("Hello, {}!".format(message.author))
 
+playerInfoToCSV()
+league_table_to_csv()
 client.run(TOKEN)
