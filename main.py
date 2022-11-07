@@ -79,10 +79,10 @@ def checkIfPlayerInSquad(squad: [Player], playerID):
     return False
 
 
-def getTable():
+def getTable(league):
     team_list = []
     team = []
-    with open('a-league_table.csv') as csv_file:
+    with open('{}_table.csv'.format(league)) as csv_file:
         csv_reader = csv.reader(csv_file, delimiter=',')
         line_count = 0
         for row in csv_reader:
@@ -164,8 +164,8 @@ async def on_message(message):
     if message.author == client.user:
         return
 
-    if message_low == '!table':
-        team_list = getTable()
+    if message_low == '!a-league-table':
+        team_list = getTable("a-league")
         output = t2a(
             header=["Pos", "Team", "GP", "GD", "Pts"],
             body=team_list,
