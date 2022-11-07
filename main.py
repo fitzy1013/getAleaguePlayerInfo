@@ -4,6 +4,7 @@ import requests
 import csv
 import random
 
+
 class Player:
     def __init__(self, id, name, position, club):
         self.name = name
@@ -16,6 +17,7 @@ class Player:
 
     def print_info(self):
         return self.name + " " + self.position
+
 
 try:
     source = requests.get('https://www.ultimatealeague.com/players/')
@@ -103,16 +105,19 @@ def getRandomXI():
     return squad_string
 
 
-TOKEN = "MTAzODA0NTM1NTY2Njg1Mzk1OA.GM07Jc.byzg-FfooaweiDJ_81ppz_QIto8cqybm006NpQ"
+with open('token.txt') as f:
+    TOKEN = f.readline()
 
 intents = discord.Intents.default()
 intents.message_content = True
 
 client = discord.Client(intents=discord.Intents.all())
 
+
 @client.event
 async def on_ready():
     print(f'We have logged in as {client.user}')
+
 
 @client.event
 async def on_message(message):
@@ -121,6 +126,10 @@ async def on_message(message):
 
     if message.author == client.user:
         return
+
+    if message_low == '!roll':
+        print("{} has requested roll".format(message.author))
+        await message.channel.send("{} has rolled a {}".format(message.author, random.randint(1, 6)))
 
     if message_low == '!randomxi':
         squad = getRandomXI()
