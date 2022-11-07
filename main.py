@@ -102,8 +102,10 @@ def getRandomXI():
     print(squad_string)
     return squad_string
 
+TOKEN = ""
 
-TOKEN = "MTAzODA0NTM1NTY2Njg1Mzk1OA.GM07Jc.byzg-FfooaweiDJ_81ppz_QIto8cqybm006NpQ"
+with open('token.txt') as f:
+    TOKEN = TOKEN + f.readline()
 
 intents = discord.Intents.default()
 intents.message_content = True
