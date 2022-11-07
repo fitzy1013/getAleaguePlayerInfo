@@ -1,8 +1,8 @@
+import discord
 from bs4 import BeautifulSoup
 import requests
 import csv
 import random
-
 
 class Player:
     def __init__(self, id, name, position, club):
@@ -15,7 +15,7 @@ class Player:
         return self.id
 
     def print_info(self):
-        print(self.name + " " + self.club + " " + self.position)
+        return self.name + " " + self.position
 
 try:
     source = requests.get('https://www.ultimatealeague.com/players/')
@@ -54,7 +54,9 @@ def checkIfPlayerInSquad(squad: [Player], playerID) :
 
     return False
 
+
 def getRandomXI():
+    squad_string = ""
     gk_list = []
     def_list = []
     mid_list = []
@@ -76,24 +78,56 @@ def getRandomXI():
             line_count += 1
 
     squad = []
-    squad.append(gk_list[random.randint(0, len(gk_list) - 1)])
+    index = random.randint(0,len(gk_list)-1)
+    squad.append(gk_list[index])
+    squad_string = squad_string + gk_list[index].print_info() + "\n"
     for i in range(0, 4):
         index = random.randint(0, len(def_list) - 1)
         if not checkIfPlayerInSquad(squad, def_list[index].get_playerID()):
             squad.append(def_list[index])
+            squad_string = squad_string + def_list[index].print_info() + "\n"
 
     for i in range(0, 4):
         index = random.randint(0, len(mid_list) - 1)
         if not checkIfPlayerInSquad(squad, mid_list[index].get_playerID()):
             squad.append(mid_list[index])
+            squad_string = squad_string + mid_list[index].print_info() + "\n"
 
     for i in range(0, 2):
         index = random.randint(0, len(fwd_list) - 1)
         if not checkIfPlayerInSquad(squad, fwd_list[index].get_playerID()):
             squad.append(fwd_list[index])
+            squad_string = squad_string + fwd_list[index].print_info() + "\n"
 
-    for i in squad:
-        i.print_info()
+    print(squad_string)
+    return squad_string
 
-getRandomXI()
 
+TOKEN = "MTAzODA0NTM1NTY2Njg1Mzk1OA.GM07Jc.byzg-FfooaweiDJ_81ppz_QIto8cqybm006NpQ"
+
+intents = discord.Intents.default()
+intents.message_content = True
+
+client = discord.Client(intents=discord.Intents.all())
+
+@client.event
+async def on_ready():
+    print(f'We have logged in as {client.user}')
+
+@client.event
+async def on_message(message):
+
+    message_low = message.content.lower()
+
+    if message.author == client.user:
+        return
+
+    if message_low == '!randomxi':
+        squad = getRandomXI()
+        print("{} has requested randomxi".format(message.author))
+        await message.channel.send("{} this is your Random 11\n\n{}".format(message.author, squad))
+
+    if message_low == '!hello':
+        await message.channel.send("Hello, {}!".format(message.author))
+
+client.run(TOKEN)
